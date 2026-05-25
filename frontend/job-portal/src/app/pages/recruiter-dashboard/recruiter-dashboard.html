@@ -1,0 +1,351 @@
+<div class="dashboard-layout" [class.sidebar-open]="sidebarOpen">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand" routerLink="/">
+        <div class="brand-icon"><i class="fas fa-briefcase"></i></div>
+        <span class="brand-name">Job<span class="accent">Portal</span></span>
+      </div>
+      <button class="close-sidebar d-lg-none" (click)="toggleSidebar()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="profile-card">
+      <div class="profile-avatar" (click)="goToProfile()">
+        <img *ngIf="currentUser?.profile_picture" [src]="currentUser?.profile_picture" alt="Profile">
+        <div class="avatar-placeholder" *ngIf="!currentUser?.profile_picture">
+          {{currentUser?.username?.charAt(0)?.toUpperCase()}}
+        </div>
+      </div>
+      <h6 class="profile-name">{{currentUser?.company_name || currentUser?.username}}</h6>
+      <span class="profile-role">Recruiter</span>
+    </div>
+
+    <!-- Stats -->
+    <div class="sidebar-stats">
+      <div class="stat-box">
+        <span class="stat-num">{{myJobs.length}}</span>
+        <span class="stat-lbl">Total Jobs</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num text-success">{{activeJobsCount}}</span>
+        <span class="stat-lbl">Active</span>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <a class="nav-item" [class.active]="activeTab === 'jobs'" (click)="activeTab = 'jobs'">
+        <i class="fas fa-briefcase"></i> My Jobs
+        <span class="nav-badge">{{myJobs.length}}</span>
+      </a>
+      <a class="nav-item" [class.active]="activeTab === 'post'" (click)="openJobForm()">
+        <i class="fas fa-plus-circle"></i> Post New Job
+      </a>
+      <a class="nav-item" [class.active]="activeTab === 'applications'" *ngIf="selectedJob" (click)="activeTab = 'applications'">
+        <i class="fas fa-file-alt"></i> Applications
+        <span class="nav-badge">{{selectedJobApplications.length}}</span>
+      </a>
+      <a class="nav-item" (click)="goToProfile()">
+        <i class="fas fa-user"></i> My Profile
+      </a>
+    </nav>
+
+    <button class="logout-btn" (click)="logout()">
+      <i class="fas fa-sign-out-alt me-2"></i> Logout
+    </button>
+  </aside>
+
+  <!-- OVERLAY -->
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOP NAVBAR -->
+    <header class="top-navbar">
+      <div class="navbar-left">
+        <button class="menu-toggle d-lg-none" (click)="toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="page-title">
+          <h5 *ngIf="activeTab === 'jobs'">My Job Offers</h5>
+          <h5 *ngIf="activeTab === 'post'">{{editingJob ? 'Edit Job' : 'Post New Job'}}</h5>
+          <h5 *ngIf="activeTab === 'applications'">Applications for: {{selectedJob?.title}}</h5>
+        </div>
+      </div>
+      <div class="navbar-right">
+        <div class="notification-bell">
+          <i class="fas fa-bell"></i>
+        </div>
+        <div class="user-avatar" (click)="goToProfile()">
+          <div class="avatar-sm">
+            {{currentUser?.username?.charAt(0)?.toUpperCase()}}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- JOBS TAB -->
+    <div class="content-area" *ngIf="activeTab === 'jobs'">
+      <div class="welcome-banner">
+        <div>
+          <h4>Welcome, {{currentUser?.company_name || currentUser?.username}}! 👋</h4>
+          <p>Manage your job offers and review applications</p>
+        </div>
+        <button class="btn btn-light btn-sm px-4" (click)="openJobForm()">
+          <i class="fas fa-plus me-2"></i> Post New Job
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoadingJobs">
+        <div class="spinner-border text-primary"></div>
+        <p>Loading your jobs...</p>
+      </div>
+
+      <!-- Empty -->
+      <div class="empty-state" *ngIf="!isLoadingJobs && myJobs.length === 0">
+        <i class="fas fa-briefcase"></i>
+        <h5>No jobs posted yet</h5>
+        <p>Start by posting your first job offer</p>
+        <button class="btn btn-primary" (click)="openJobForm()">Post a Job</button>
+      </div>
+
+      <!-- Jobs List -->
+      <div class="jobs-list" *ngIf="!isLoadingJobs && myJobs.length > 0">
+        <div class="job-item" *ngFor="let job of myJobs">
+          <div class="job-item-left">
+            <div class="job-img" *ngIf="job.photo">
+              <img [src]="job.photo" [alt]="job.title">
+            </div>
+            <div class="job-img placeholder" *ngIf="!job.photo">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="job-info">
+              <h6 class="job-title">{{job.title}}</h6>
+              <div class="job-meta">
+                <span><i class="fas fa-map-marker-alt me-1"></i>{{job.location}}</span>
+                <span><i class="fas fa-tag me-1"></i>{{job.category_display}}</span>
+                <span><i class="fas fa-clock me-1"></i>{{job.job_type_display}}</span>
+              </div>
+              <div class="job-badges">
+                <span class="badge-status" [class.active]="job.status === 'active'"
+                  [class.cancelled]="job.status === 'cancelled'"
+                  [class.closed]="job.status === 'closed'">
+                  {{job.status | titlecase}}
+                </span>
+                <span class="badge-date">Posted {{job.created_at | date:'MMM d, y'}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="job-item-actions">
+            <button class="btn btn-sm btn-outline-primary" (click)="viewApplications(job)">
+              <i class="fas fa-users me-1"></i> Applications
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="openJobForm(job)">
+              <i class="fas fa-edit me-1"></i> Edit
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="deleteJob(job.id)">
+              <i class="fas fa-trash me-1"></i> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST JOB TAB -->
+    <div class="content-area" *ngIf="activeTab === 'post'">
+      <div class="welcome-banner">
+        <div>
+          <h4>{{editingJob ? 'Edit Job Offer' : 'Post a New Job'}}</h4>
+          <p>Fill in the details below to {{editingJob ? 'update' : 'publish'}} your job offer</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <form [formGroup]="jobForm" (ngSubmit)="submitJob()">
+          <div class="row g-3">
+
+            <div class="col-12">
+              <label class="form-label">Job Title *</label>
+              <input type="text" class="form-control custom-input"
+                formControlName="title" placeholder="e.g. Senior Software Engineer"
+                [class.is-invalid]="jobForm.get('title')?.invalid && jobForm.get('title')?.touched">
+              <div class="invalid-feedback">Job title is required.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Category *</label>
+              <select class="form-select custom-input" formControlName="category">
+                <option *ngFor="let cat of categories" [value]="cat.value">{{cat.label}}</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Job Type *</label>
+              <select class="form-select custom-input" formControlName="job_type">
+                <option *ngFor="let type of jobTypes" [value]="type.value">{{type.label}}</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Location *</label>
+              <input type="text" class="form-control custom-input"
+                formControlName="location" placeholder="e.g. Douala, Cameroon"
+                [class.is-invalid]="jobForm.get('location')?.invalid && jobForm.get('location')?.touched">
+              <div class="invalid-feedback">Location is required.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Salary <span class="text-muted">(optional)</span></label>
+              <input type="text" class="form-control custom-input"
+                formControlName="salary" placeholder="e.g. 300,000 - 500,000 FCFA">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Experience Level *</label>
+              <select class="form-select custom-input" formControlName="experience_level">
+                <option *ngFor="let exp of experienceLevels" [value]="exp.value">{{exp.label}}</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Positions Available *</label>
+              <input type="number" class="form-control custom-input"
+                formControlName="positions_available" min="1">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Application Deadline <span class="text-muted">(optional)</span></label>
+              <input type="date" class="form-control custom-input" formControlName="deadline">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Skills Required *</label>
+              <input type="text" class="form-control custom-input"
+                formControlName="skills_required"
+                placeholder="e.g. Python, Django, REST API (comma separated)"
+                [class.is-invalid]="jobForm.get('skills_required')?.invalid && jobForm.get('skills_required')?.touched">
+              <div class="invalid-feedback">Skills are required.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Job Description *</label>
+              <textarea class="form-control custom-input" formControlName="description"
+                rows="5" placeholder="Describe the role, responsibilities and requirements..."
+                [class.is-invalid]="jobForm.get('description')?.invalid && jobForm.get('description')?.touched">
+              </textarea>
+              <div class="invalid-feedback">Description is required.</div>
+            </div>
+
+            <div class="col-12 d-flex gap-3 justify-content-end">
+              <button type="button" class="btn btn-outline-secondary px-4"
+                (click)="activeTab = 'jobs'">Cancel</button>
+              <button type="submit" class="btn btn-primary px-5" [disabled]="isSubmittingJob">
+                <span *ngIf="!isSubmittingJob">
+                  <i class="fas fa-paper-plane me-2"></i>
+                  {{editingJob ? 'Update Job' : 'Post Job'}}
+                </span>
+                <span *ngIf="isSubmittingJob">
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Submitting...
+                </span>
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- APPLICATIONS TAB -->
+    <div class="content-area" *ngIf="activeTab === 'applications'">
+      <div class="welcome-banner">
+        <div>
+          <h4>Applications for "{{selectedJob?.title}}"</h4>
+          <p>{{selectedJobApplications.length}} application(s) received</p>
+        </div>
+        <button class="btn btn-light btn-sm" (click)="activeTab = 'jobs'">
+          <i class="fas fa-arrow-left me-2"></i> Back to Jobs
+        </button>
+      </div>
+
+      <div class="loading-state" *ngIf="isLoadingApplications">
+        <div class="spinner-border text-primary"></div>
+        <p>Loading applications...</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!isLoadingApplications && selectedJobApplications.length === 0">
+        <i class="fas fa-users"></i>
+        <h5>No applications yet</h5>
+        <p>No one has applied to this job yet</p>
+      </div>
+
+      <div class="applications-list" *ngIf="!isLoadingApplications && selectedJobApplications.length > 0">
+        <div class="application-card" *ngFor="let app of selectedJobApplications">
+          <div class="app-header">
+            <div class="app-info">
+              <h6 class="app-name">{{app.full_name}}</h6>
+              <p class="app-email"><i class="fas fa-envelope me-1"></i>{{app.email}}</p>
+              <p class="app-phone"><i class="fas fa-phone me-1"></i>{{app.phone}}</p>
+            </div>
+            <div class="app-right">
+              <span class="status-badge" [class]="getStatusClass(app.status)">
+                {{app.status | titlecase}}
+              </span>
+              <p class="app-date">{{app.applied_at | date:'MMM d, y'}}</p>
+            </div>
+          </div>
+
+          <div class="app-cover" *ngIf="app.cover_letter">
+            <p><strong>Cover Letter:</strong> {{app.cover_letter}}</p>
+          </div>
+
+          <div class="app-actions">
+            <a [href]="app.cv" target="_blank" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-file-pdf me-1"></i> View CV
+            </a>
+            <button class="btn btn-sm btn-success"
+              (click)="sendingMessageTo = app.id; messagePositive = true"
+              *ngIf="sendingMessageTo !== app.id">
+              <i class="fas fa-check me-1"></i> Accept
+            </button>
+            <button class="btn btn-sm btn-danger"
+              (click)="sendingMessageTo = app.id; messagePositive = false"
+              *ngIf="sendingMessageTo !== app.id">
+              <i class="fas fa-times me-1"></i> Reject
+            </button>
+          </div>
+
+          <!-- Message Form -->
+          <div class="message-form" *ngIf="sendingMessageTo === app.id">
+            <div class="message-type-badge" [class.positive]="messagePositive" [class.negative]="!messagePositive">
+              <i class="fas" [class.fa-check-circle]="messagePositive" [class.fa-times-circle]="!messagePositive"></i>
+              {{messagePositive ? 'Sending Acceptance Message' : 'Sending Rejection Message'}}
+            </div>
+            <textarea class="form-control mt-2" rows="3"
+              [(ngModel)]="messageContent"
+              [placeholder]="messagePositive ?
+                'e.g. Congratulations! You are qualified. Your interview is scheduled for...' :
+                'e.g. Thank you for applying. Unfortunately you are not qualified for this position.'">
+            </textarea>
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-sm btn-outline-secondary" (click)="sendingMessageTo = null">
+                Cancel
+              </button>
+              <button class="btn btn-sm btn-primary" (click)="sendMessage(app.id, messagePositive)">
+                <i class="fas fa-paper-plane me-1"></i> Send Message
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>

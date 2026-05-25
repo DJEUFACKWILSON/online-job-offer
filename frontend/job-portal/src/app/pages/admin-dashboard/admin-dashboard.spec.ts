@@ -1,0 +1,150 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth';
+import { JobService } from '../../services/job';
+import { ApplicationService } from '../../services/application';
+import { User } from '../../models/user';
+import { JobOffer } from '../../models/job-offer';
+import { Application } from '../../models/application';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment.development';
+
+@Component({
+  selector: 'app-admin-dashboard',
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule],
+  templateUrl: './admin-dashboard.html',
+  styleUrl: './admin-dashboard.scss'
+})
+export class AdminDashboard implements OnInit {
+  currentUser: User | null = null;
+  allUsers: User[] = [];
+  allJobs: JobOffer[] = [];
+  allApplications: Application[] = [];
+  isLoadingUsers = true;
+  isLoadingJobs = true;
+  isLoadingApplications = true;
+  activeTab = 'overview';
+  sidebarOpen = false;
+  searchUser = '';
+  searchJob = '';
+
+  stats = {
+    total_users: 0,
+    total_seekers: 0,
+    total_recruiters: 0,
+    total_jobs: 0,
+    active_jobs: 0,
+    cancelled_jobs: 0,
+    total_applications: 0,
+  };
+
+  constructor(
+    private authService: AuthService,
+    private jobService: JobService,
+    private applicationService: ApplicationService,
+    private http: HttpClient,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    this.currentUser = this.authService.getCurrentUser();
+    this.loadStats();
+    this.loadUsers();
+    this.loadJobs();
+    this.loadApplications();
+  }
+
+  loadStats() {
+    this.http.get<any>(`${environment.apiUrl}/admin-stats/`).subscribe({
+      next: (data) => { this.stats = data; }
+    });
+  }
+
+  loadUsers() {
+    this.isLoadingUsers = true;
+    this.http.get<User[]>(`${environment.apiUrl}/profile/`).subscribe({
+      next: () => { this.isLoadingUsers = false; },
+      error: () => { this.isLoadingUsers = false; }
+    });
+    this.http.get<any>(`${environment.apiUrl}/admin-stats/`).subscribe({
+      next: () => { this.isLoadingUsers = false; }
+    });
+  }
+
+  loadJobs() {
+    this.isLoadingJobs = true;
+    this.jobService.getAllJobs().subscribe({
+      next: (jobs) => {
+        this.allJobs = jobs;
+        this.isLoadingJobs = false;
+      },
+      error: () => { this.isLoadingJobs = false; }
+    });
+  }
+
+  loadApplications() {
+    this.isLoadingApplications = true;
+    this.applicationService.getAllApplications().subscribe({
+      next: (apps) => {
+        this.allApplications = apps;
+        this.isLoadingApplications = false;
+      },
+      error: () => { this.isLoadingApplications = false; }
+    });
+  }
+
+  cancelJob(jobId: number) {
+    if (confirm('Are you sure you want to cancel this job?')) {
+      this.jobService.cancelJob(jobId).subscribe({
+        next: () => this.loadJobs()
+      });
+    }
+  }
+
+  deleteJob(jobId: number) {
+    if (confirm('Are you sure you want to DELETE this job? This cannot be undone.')) {
+      this.jobService.deleteJob(jobId).subscribe({
+        next: () => this.loadJobs()
+      });
+    }
+  }
+
+  toggleUserStatus(user: User) {
+    const action = user.is_active ? 'disable' : 'enable';
+    if (confirm(`Are you sure you want to ${action} this user?`)) {
+      this.http.patch<User>(`${environment.apiUrl}/profile/`, {
+        is_active: !user.is_active
+      }).subscribe({
+        next: () => this.loadStats()
+      });
+    }
+  }
+
+  get filteredJobs() {
+    if (!this.searchJob) return this.allJobs;
+    return this.allJobs.filter(j =>
+      j.title.toLowerCase().includes(this.searchJob.toLowerCase()) ||
+      j.recruiter_name.toLowerCase().includes(this.searchJob.toLowerCase())
+    );
+  }
+
+  getStatusClass(status: string): string {
+    const classes: any = {
+      'pending': 'badge-pending',
+      'reviewed': 'badge-reviewed',
+      'accepted': 'badge-accepted',
+      'rejected': 'badge-rejected'
+    };
+    return classes[status] || 'badge-pending';
+  }
+
+  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
+  goToProfile() { this.router.navigate(['/profile']); }
+  logout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+}
