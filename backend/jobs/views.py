@@ -1,4 +1,4 @@
-from rest_framework import generics, viewsets, status, permissions
+from rest_framework import generics, viewsets, status, permissions, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,7 +9,6 @@ from django.conf import settings
 import qrcode
 import io
 import base64
-
 from .models import User, JobOffer, Application, RecruitmentMessage
 from .serializers import (
     RegisterSerializer, UserSerializer, JobOfferSerializer,
@@ -106,6 +105,7 @@ class LoginView(APIView):
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_object(self):
         return self.request.user

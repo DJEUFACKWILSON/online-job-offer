@@ -1,1 +1,168 @@
-<p>profile works!</p>
+<div class="profile-page">
+
+  <!-- HEADER -->
+  <header class="profile-header">
+    <div class="container">
+      <div class="header-content">
+        <button class="btn-back" (click)="goBack()">
+          <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+        </button>
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-briefcase"></i></div>
+          <span class="brand-text">Job<span class="brand-accent">Portal</span></span>
+        </div>
+        <button class="btn-logout" (click)="logout()">
+          <i class="fas fa-sign-out-alt me-2"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="profile-main">
+    <div class="container">
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="spinner-border text-primary"></div>
+        <p>Loading profile...</p>
+      </div>
+
+      <div class="profile-layout" *ngIf="!isLoading">
+
+        <!-- LEFT — Avatar Card -->
+        <div class="profile-left">
+          <div class="avatar-card">
+            <div class="avatar-wrapper">
+              <img *ngIf="previewUrl" [src]="previewUrl" alt="Profile" class="avatar-img">
+              <img *ngIf="!previewUrl && currentUser?.profile_picture"
+                [src]="currentUser?.profile_picture" alt="Profile" class="avatar-img">
+              <div class="avatar-placeholder"
+                *ngIf="!previewUrl && !currentUser?.profile_picture">
+                {{currentUser?.username?.charAt(0)?.toUpperCase()}}
+              </div>
+              <label class="avatar-edit-btn" for="fileInput">
+                <i class="fas fa-camera"></i>
+              </label>
+              <input type="file" id="fileInput" hidden
+                accept="image/*" (change)="onFileSelected($event)">
+            </div>
+            <h5 class="user-name">{{currentUser?.username}}</h5>
+            <span class="user-role">{{currentUser?.role | titlecase}}</span>
+            <div class="user-meta" *ngIf="currentUser?.location">
+              <i class="fas fa-map-marker-alt me-2"></i>{{currentUser?.location}}
+            </div>
+            <div class="user-meta" *ngIf="currentUser?.company_name">
+              <i class="fas fa-building me-2"></i>{{currentUser?.company_name}}
+            </div>
+            <div class="user-meta">
+              <i class="fas fa-calendar me-2"></i>
+              Joined {{currentUser?.date_joined | date:'MMM y'}}
+            </div>
+            <div class="verified-badge" *ngIf="currentUser?.is_verified">
+              <i class="fas fa-check-circle me-2"></i> Verified Account
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT — Edit Form -->
+        <div class="profile-right">
+          <div class="form-card">
+            <div class="form-card-header">
+              <h5>Edit Profile</h5>
+              <p>Update your personal information</p>
+            </div>
+
+            <!-- Success -->
+            <div class="alert alert-success d-flex align-items-center gap-2"
+              *ngIf="successMessage">
+              <i class="fas fa-check-circle"></i>
+              <span>{{successMessage}}</span>
+            </div>
+
+            <!-- Error -->
+            <div class="alert alert-danger d-flex align-items-center gap-2"
+              *ngIf="errorMessage">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>{{errorMessage}}</span>
+            </div>
+
+            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">Username *</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" class="form-control custom-input"
+                      formControlName="username"
+                      [class.is-invalid]="profileForm.get('username')?.invalid && profileForm.get('username')?.touched">
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Email *</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" class="form-control custom-input"
+                      formControlName="email"
+                      [class.is-invalid]="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Phone</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-phone input-icon"></i>
+                    <input type="text" class="form-control custom-input"
+                      formControlName="phone" placeholder="+237 6XX XXX XXX">
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Location</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-map-marker-alt input-icon"></i>
+                    <input type="text" class="form-control custom-input"
+                      formControlName="location" placeholder="e.g. Douala, Cameroon">
+                  </div>
+                </div>
+
+                <div class="col-12" *ngIf="currentUser?.role === 'recruiter'">
+                  <label class="form-label">Company Name</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-building input-icon"></i>
+                    <input type="text" class="form-control custom-input"
+                      formControlName="company_name" placeholder="Your company name">
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Bio</label>
+                  <textarea class="form-control custom-input"
+                    formControlName="bio" rows="4"
+                    placeholder="Tell us about yourself..."></textarea>
+                </div>
+
+                <div class="col-12">
+                  <button type="submit" class="btn btn-primary save-btn"
+                    [disabled]="isSubmitting">
+                    <span *ngIf="!isSubmitting">
+                      <i class="fas fa-save me-2"></i> Save Changes
+                    </span>
+                    <span *ngIf="isSubmitting">
+                      <span class="spinner-border spinner-border-sm me-2"></span>
+                      Saving...
+                    </span>
+                  </button>
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>

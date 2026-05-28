@@ -13,24 +13,30 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      this.currentUserSubject.next(JSON.parse(savedUser));
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    const user = JSON.parse(savedUser);
+    if (user.profile_picture && !user.profile_picture.startsWith('http')) {
+      user.profile_picture = `http://localhost:8000${user.profile_picture}`;
     }
+    this.currentUserSubject.next(user);
   }
-
+}
   register(data: RegisterRequest): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/register/`, data);
   }
 
   login(data: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login/`, data).pipe(
-      tap(response => {
-        localStorage.setItem('access_token', response.access);
-        localStorage.setItem('refresh_token', response.refresh);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        this.currentUserSubject.next(response.user);
-      })
+   tap(response => {
+  if (response.user.profile_picture && !response.user.profile_picture.startsWith('http')) {
+    response.user.profile_picture = `http://localhost:8000${response.user.profile_picture}`;
+  }
+  localStorage.setItem('access_token', response.access);
+  localStorage.setItem('refresh_token', response.refresh);
+  localStorage.setItem('user', JSON.stringify(response.user));
+  this.currentUserSubject.next(response.user);
+})
     );
   }
 
@@ -60,14 +66,25 @@ export class AuthService {
 
   updateProfile(data: FormData): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/profile/`, data).pipe(
-      tap(user => {
-        localStorage.setItem('user', JSON.stringify(user));
-        this.currentUserSubject.next(user);
-      })
+  tap(user => {
+  if (user.profile_picture && !user.profile_picture.startsWith('http')) {
+    user.profile_picture = `http://localhost:8000${user.profile_picture}`;
+  }
+  localStorage.setItem('user', JSON.stringify(user));
+  this.currentUserSubject.next(user);
+})
     );
   }
 
   getProfile(): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/profile/`);
+    return this.http.get<User>(`${this.apiUrl}/profile/`).pipe(
+      tap(user => {
+  if (user.profile_picture && !user.profile_picture.startsWith('http')) {
+    user.profile_picture = `http://localhost:8000${user.profile_picture}`;
+  }
+  localStorage.setItem('user', JSON.stringify(user));
+  this.currentUserSubject.next(user);
+})
+    )
   }
 }
