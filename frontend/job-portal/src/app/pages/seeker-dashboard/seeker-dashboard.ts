@@ -119,9 +119,8 @@ export class SeekerDashboard implements OnInit {
     const app = this.myApplications.find(a => a.job_offer === jobId);
     return app ? app.status : '';
   }
-
-  viewJob(jobId: number) { this.router.navigate(['/job', jobId]); }
-  applyJob(jobId: number) { this.router.navigate(['/apply', jobId]); }
+viewJob(jobId: number) { this.router.navigate(['/job-detail', jobId]); }
+applyJob(jobId: number) { this.router.navigate(['/apply-job', jobId]); }
   goToProfile() { this.router.navigate(['/profile']); }
 
   logout() {

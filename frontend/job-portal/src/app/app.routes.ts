@@ -21,12 +21,12 @@ export const routes: Routes = [
     data: { role: 'seeker' }
   },
   {
-    path: 'job/:id',
+    path: 'job-detail/:id',
     loadComponent: () => import('./pages/job-detail/job-detail').then(m => m.JobDetail),
     canActivate: [authGuard]
   },
   {
-    path: 'apply/:id',
+    path: 'apply-job/:id',
     loadComponent: () => import('./pages/apply-job/apply-job').then(m => m.ApplyJob),
     canActivate: [authGuard],
     data: { role: 'seeker' }
@@ -34,12 +34,6 @@ export const routes: Routes = [
   {
     path: 'recruiter-dashboard',
     loadComponent: () => import('./pages/recruiter-dashboard/recruiter-dashboard').then(m => m.RecruiterDashboard),
-    canActivate: [authGuard],
-    data: { role: 'recruiter' }
-  },
-  {
-    path: 'job/:id/applications',
-    loadComponent: () => import('./pages/job-applications/job-applications').then(m => m.JobApplications),
     canActivate: [authGuard],
     data: { role: 'recruiter' }
   },

@@ -1,1 +1,136 @@
-<p>job-detail works!</p>
+<div class="job-detail-page">
+
+  <!-- HEADER -->
+  <header class="detail-header">
+    <div class="container">
+      <div class="header-content">
+        <button class="btn-back" (click)="goBack()">
+          <i class="fas fa-arrow-left me-2"></i> Back to Jobs
+        </button>
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-briefcase"></i></div>
+          <span class="brand-text">Job<span class="brand-accent">Portal</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- LOADING -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner-border text-primary"></div>
+    <p>Loading job details...</p>
+  </div>
+
+  <!-- MAIN -->
+  <main class="detail-main" *ngIf="!isLoading && job">
+    <div class="container">
+
+      <!-- Hero -->
+      <div class="job-hero">
+        <div class="job-hero-left">
+          <div class="job-img" *ngIf="job.photo">
+            <img [src]="job.photo" [alt]="job.title">
+          </div>
+          <div class="job-img placeholder" *ngIf="!job.photo">
+            <i class="fas fa-briefcase"></i>
+          </div>
+          <div class="job-hero-info">
+            <h1>{{job.title}}</h1>
+            <p class="recruiter">
+              <i class="fas fa-building me-2"></i>{{job.recruiter_name}}
+            </p>
+            <div class="job-tags">
+              <span class="tag"><i class="fas fa-map-marker-alt me-1"></i>{{job.location}}</span>
+              <span class="tag"><i class="fas fa-clock me-1"></i>{{job.job_type_display}}</span>
+              <span class="tag"><i class="fas fa-tag me-1"></i>{{job.category_display}}</span>
+              <span class="tag salary" *ngIf="job.salary">
+                <i class="fas fa-money-bill-wave me-1"></i>{{job.salary}}
+              </span>
+            </div>
+          </div>
+        </div>
+       <div class="job-hero-right">
+  <div *ngIf="currentUser?.role === 'seeker'">
+    <button class="btn-apply" (click)="applyNow()" *ngIf="!hasApplied">
+      <i class="fas fa-paper-plane me-2"></i> Apply Now
+    </button>
+    <div class="already-applied" *ngIf="hasApplied">
+      <i class="fas fa-check-circle me-2"></i> Already Applied
+    </div>
+  </div>
+  <div class="deadline" *ngIf="job.deadline">
+    <i class="fas fa-calendar me-2"></i>
+    Deadline: {{job.deadline | date:'MMM d, y'}}
+  </div>
+  <div class="positions">
+    <i class="fas fa-users me-2"></i>
+    {{job.positions_available}} position(s) available
+  </div>
+</div>
+      </div>
+
+      <!-- Content -->
+      <div class="job-content">
+
+        <!-- Description -->
+        <div class="content-card">
+          <h5><i class="fas fa-align-left me-2"></i>Job Description</h5>
+          <p>{{job.description}}</p>
+        </div>
+
+        <!-- Skills -->
+        <div class="content-card" *ngIf="job.skills_required">
+          <h5><i class="fas fa-tools me-2"></i>Skills Required</h5>
+          <div class="skills-list">
+            <span class="skill-tag" *ngFor="let skill of job.skills_required.split(',')">
+              {{skill.trim()}}
+            </span>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="content-card">
+          <h5><i class="fas fa-info-circle me-2"></i>Job Details</h5>
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label">Experience Level</span>
+              <span class="detail-value">{{job.experience_level | titlecase}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Job Type</span>
+              <span class="detail-value">{{job.job_type_display}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Category</span>
+              <span class="detail-value">{{job.category_display}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Positions</span>
+              <span class="detail-value">{{job.positions_available}}</span>
+            </div>
+            <div class="detail-item" *ngIf="job.deadline">
+              <span class="detail-label">Deadline</span>
+              <span class="detail-value">{{job.deadline | date:'MMM d, y'}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Posted</span>
+              <span class="detail-value">{{job.created_at | date:'MMM d, y'}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apply Button -->
+       <div class="apply-section" *ngIf="currentUser?.role === 'seeker'">
+  <button class="btn-apply-lg" (click)="applyNow()" *ngIf="!hasApplied">
+    <i class="fas fa-paper-plane me-2"></i> Apply for this Position
+  </button>
+  <div class="already-applied-lg" *ngIf="hasApplied">
+    <i class="fas fa-check-circle me-2"></i> You have already applied for this position
+  </div>
+</div>
+
+      </div>
+    </div>
+  </main>
+
+</div>
