@@ -30,10 +30,11 @@ export class RecruiterDashboard implements OnInit {
   showJobForm = false;
   editingJob: JobOffer | null = null;
   sidebarOpen = false;
-  messageContent = '';
-  messagePositive = true;
-  sendingMessageTo: number | null = null;
-
+messageContent = '';
+messagePositive = true;
+sendingMessageTo: number | null = null;
+successMessage = '';
+errorMessage = '';
   jobForm: FormGroup;
 
   categories = [
@@ -177,21 +178,33 @@ export class RecruiterDashboard implements OnInit {
       });
     }
   }
-
-  sendMessage(applicationId: number, isPositive: boolean) {
-    if (!this.messageContent.trim()) return;
-    this.messageService.sendMessage({
-      application: applicationId,
-      content: this.messageContent,
-      is_positive: isPositive
-    }).subscribe({
-      next: () => {
-        this.messageContent = '';
-        this.sendingMessageTo = null;
-        this.viewApplications(this.selectedJob!);
-      }
-    });
+sendMessage(applicationId: number, isPositive: boolean) {
+  console.log('sendMessage called', applicationId, isPositive, this.messageContent);
+  if (!this.messageContent.trim()) {
+    this.errorMessage = 'Please enter a message before sending.';
+    return;
   }
+
+  this.messageService.sendMessage({
+    application: applicationId,
+    content: this.messageContent,
+    is_positive: isPositive
+  }).subscribe({
+next: () => {
+  this.messageContent = '';
+  this.sendingMessageTo = null;
+  this.errorMessage = '';
+  this.successMessage = isPositive ? 'Acceptance message sent successfully!' : 'Rejection message sent successfully!';
+  setTimeout(() => this.successMessage = '', 3000);
+  // Refresh auth token to avoid stale user data
+  this.authService.getProfile().subscribe();
+  this.viewApplications(this.selectedJob!);
+},
+    error: (err) => {
+      this.errorMessage = err.error?.detail || 'Failed to send message. Try again.';
+    }
+  });
+}
 
   getStatusClass(status: string): string {
     const classes: any = {

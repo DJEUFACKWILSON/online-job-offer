@@ -155,11 +155,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             raise permissions.PermissionDenied('Only job seekers can apply.')
         serializer.save(applicant=self.request.user)
 
-
 class RecruitmentMessageViewSet(viewsets.ModelViewSet):
     serializer_class = RecruitmentMessageSerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['get', 'post']  # no update or delete allowed
+    http_method_names = ['get', 'post']
 
     def get_queryset(self):
         user = self.request.user
@@ -174,12 +173,44 @@ class RecruitmentMessageViewSet(viewsets.ModelViewSet):
                 application__applicant=user
             )
 
-    def perform_create(self, serializer):
-        if self.request.user.role != 'recruiter':
-            raise permissions.PermissionDenied('Only recruiters can send messages.')
-        serializer.save(sender=self.request.user)
+    def create(self, request, *args, **kwargs):
+        if request.user.role != 'recruiter':
+            return Response({'error': 'Only recruiters can send messages.'}, status=status.HTTP_403_FORBIDDEN)
 
+        application_id = request.data.get('application')
+        content = request.data.get('content')
+        is_positive = request.data.get('is_positive')
+        print(f"DEBUG: is_positive value='{is_positive}' type={type(is_positive)}")
+        try:
+            application = Application.objects.get(id=application_id)
+        except Application.DoesNotExist:
+            return Response({'error': 'Application not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Update application status
+        if str(is_positive).lower() in ['true', '1']:
+            application.status = 'accepted'
+        else:
+            application.status = 'rejected'
+        application.save()
+
+        # Update or create message
+        existing = RecruitmentMessage.objects.filter(application=application).first()
+        if existing:
+            existing.content = content
+            existing.is_positive = is_positive
+            existing.sender = request.user
+            existing.save()
+            msg = existing
+        else:
+            msg = RecruitmentMessage.objects.create(
+                application=application,
+                sender=request.user,
+                content=content,
+                is_positive=is_positive
+            )
+
+        serializer = self.get_serializer(msg)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 class AdminStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -194,4 +225,5 @@ class AdminStatsView(APIView):
             'active_jobs': JobOffer.objects.filter(status='active').count(),
             'cancelled_jobs': JobOffer.objects.filter(status='cancelled').count(),
             'total_applications': Application.objects.count(),
+            
         })

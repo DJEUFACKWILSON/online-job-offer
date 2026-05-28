@@ -127,28 +127,21 @@ class ApplicationSerializer(serializers.ModelSerializer):
                 )
         return attrs
 
-
 class RecruitmentMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecruitmentMessage
-        fields = ('id', 'application', 'sender', 'content', 'is_positive', 'sent_at')
-        read_only_fields = ('id', 'sender', 'sent_at')
+        fields = ('id', 'application', 'content', 'is_positive', 'sent_at')
+        read_only_fields = ('id', 'sent_at')
+        validators = []  # Remove unique constraint
 
     def validate(self, attrs):
         application = attrs['application']
-        # Check if message already exists for this application
-        if RecruitmentMessage.objects.filter(application=application).exists():
-            raise serializers.ValidationError(
-                'A message has already been sent for this application.'
-            )
-        # Check that the sender is the recruiter who posted the job
         request = self.context.get('request')
         if request and application.job_offer.recruiter != request.user:
             raise serializers.ValidationError(
                 'Only the job recruiter can send a message.'
             )
         return attrs
-
 
 class TOTPVerifySerializer(serializers.Serializer):
     code = serializers.CharField(max_length=6, min_length=6)

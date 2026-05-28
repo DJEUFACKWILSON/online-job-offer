@@ -14,4 +14,5 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('admin-stats/', views.AdminStatsView.as_view(), name='admin-stats'),
     path('', include(router.urls)),
+    
 ]
