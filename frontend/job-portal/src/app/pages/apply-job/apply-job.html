@@ -1,1 +1,193 @@
-<p>apply-job works!</p>
+<div class="apply-page">
+
+  <!-- HEADER -->
+  <header class="apply-header">
+    <div class="container">
+      <div class="header-content">
+        <button class="btn-back" (click)="goBack()">
+          <i class="fas fa-arrow-left me-2"></i> Back to Jobs
+        </button>
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-briefcase"></i></div>
+          <span class="brand-text">Job<span class="brand-accent">Portal</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="apply-main">
+    <div class="container">
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isLoadingJob">
+        <div class="spinner-border text-primary"></div>
+        <p>Loading job details...</p>
+      </div>
+
+      <div class="apply-layout" *ngIf="!isLoadingJob">
+
+        <!-- LEFT — Job Info -->
+        <div class="job-info-card">
+          <div class="job-header">
+            <div class="job-img" *ngIf="job?.photo">
+              <img [src]="job?.photo" [alt]="job?.title">
+            </div>
+            <div class="job-img placeholder" *ngIf="!job?.photo">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div>
+              <h5 class="job-title">{{job?.title}}</h5>
+              <p class="job-company">{{job?.recruiter_name}}</p>
+            </div>
+          </div>
+
+          <div class="job-details">
+            <div class="detail-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>{{job?.location}}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-clock"></i>
+              <span>{{job?.job_type_display}}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-tag"></i>
+              <span>{{job?.category_display}}</span>
+            </div>
+            <div class="detail-item" *ngIf="job?.salary">
+              <i class="fas fa-money-bill-wave"></i>
+              <span>{{job?.salary}}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-layer-group"></i>
+              <span>{{job?.experience_level | titlecase}}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-users"></i>
+              <span>{{job?.positions_available}} position(s)</span>
+            </div>
+          </div>
+
+          <div class="job-description">
+            <h6>Job Description</h6>
+            <p>{{job?.description}}</p>
+          </div>
+
+          <div class="job-skills" *ngIf="job?.skills_required">
+            <h6>Skills Required</h6>
+            <div class="skills-list">
+              <span class="skill-tag" *ngFor="let skill of job?.skills_required?.split(',')">
+                {{skill.trim()}}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT — Application Form -->
+        <div class="form-card">
+          <div class="form-header">
+            <h5>Apply for this Position</h5>
+            <p>Fill in your details and upload your CV</p>
+          </div>
+
+          <!-- Success -->
+          <div class="alert alert-success d-flex align-items-center gap-2"
+            *ngIf="successMessage">
+            <i class="fas fa-check-circle"></i>
+            <span>{{successMessage}}</span>
+          </div>
+
+          <!-- Error -->
+          <div class="alert alert-danger d-flex align-items-center gap-2"
+            *ngIf="errorMessage">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{errorMessage}}</span>
+          </div>
+
+          <form [formGroup]="applyForm" (ngSubmit)="onSubmit()">
+            <div class="row g-3">
+
+              <div class="col-12">
+                <label class="form-label">Full Name *</label>
+                <div class="input-wrapper">
+                  <i class="fas fa-user input-icon"></i>
+                  <input type="text" class="form-control custom-input"
+                    formControlName="full_name"
+                    [class.is-invalid]="applyForm.get('full_name')?.invalid && applyForm.get('full_name')?.touched">
+                </div>
+                <div class="invalid-feedback">Full name is required.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Email *</label>
+                <div class="input-wrapper">
+                  <i class="fas fa-envelope input-icon"></i>
+                  <input type="email" class="form-control custom-input"
+                    formControlName="email"
+                    [class.is-invalid]="applyForm.get('email')?.invalid && applyForm.get('email')?.touched">
+                </div>
+                <div class="invalid-feedback">Valid email is required.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Phone *</label>
+                <div class="input-wrapper">
+                  <i class="fas fa-phone input-icon"></i>
+                  <input type="text" class="form-control custom-input"
+                    formControlName="phone"
+                    placeholder="+237 6XX XXX XXX"
+                    [class.is-invalid]="applyForm.get('phone')?.invalid && applyForm.get('phone')?.touched">
+                </div>
+                <div class="invalid-feedback">Phone number is required.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Cover Letter <span class="text-muted">(optional)</span></label>
+                <textarea class="form-control custom-input"
+                  formControlName="cover_letter" rows="4"
+                  placeholder="Tell the recruiter why you are the best candidate...">
+                </textarea>
+              </div>
+
+              <!-- CV Upload -->
+              <div class="col-12">
+                <label class="form-label">Upload CV *</label>
+                <div class="cv-upload-area" (click)="cvInput.click()"
+                  [class.has-file]="selectedCV">
+                  <input #cvInput type="file" hidden
+                    accept=".pdf,.doc,.docx" (change)="onCVSelected($event)">
+                  <div *ngIf="!selectedCV">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click to upload your CV</p>
+                    <span>PDF, DOC, DOCX accepted</span>
+                  </div>
+                  <div *ngIf="selectedCV" class="file-selected">
+                    <i class="fas fa-file-pdf"></i>
+                    <p>{{selectedCV.name}}</p>
+                    <span>Click to change</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary submit-btn"
+                  [disabled]="isSubmitting">
+                  <span *ngIf="!isSubmitting">
+                    <i class="fas fa-paper-plane me-2"></i> Submit Application
+                  </span>
+                  <span *ngIf="isSubmitting">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Submitting...
+                  </span>
+                </button>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
