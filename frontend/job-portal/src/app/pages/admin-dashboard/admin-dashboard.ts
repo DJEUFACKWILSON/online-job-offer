@@ -10,6 +10,8 @@ import { JobOffer } from '../../models/job-offer';
 import { Application } from '../../models/application';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment.development';
+import { NotificationService, Notification } from '../../services/notification';
+
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -30,6 +32,9 @@ export class AdminDashboard implements OnInit {
   sidebarOpen = false;
   searchUser = '';
   searchJob = '';
+  notifications: Notification[] = [];
+showNotifications = false;
+unreadCount = 0;
 
   stats = {
     total_users: 0,
@@ -46,6 +51,7 @@ export class AdminDashboard implements OnInit {
     private jobService: JobService,
     private applicationService: ApplicationService,
     private http: HttpClient,
+    private notificationService: NotificationService,
     private router: Router
   ) {}
 
@@ -53,6 +59,7 @@ export class AdminDashboard implements OnInit {
     this.currentUser = this.authService.getCurrentUser();
     this.loadStats();
     this.loadJobs();
+    this.loadNotifications();
     this.loadApplications();
   }
 
@@ -125,7 +132,36 @@ export class AdminDashboard implements OnInit {
     };
     return classes[status] || 'badge-pending';
   }
+loadNotifications() {
+  this.notificationService.getNotifications().subscribe({
+    next: (data) => {
+      this.notifications = data;
+      this.unreadCount = data.length;
+    }
+  });
+}
 
+toggleNotifications() {
+  this.showNotifications = !this.showNotifications;
+  if (this.showNotifications) {
+    this.unreadCount = 0;
+  }
+}
+dismissNotification(notification: any, event: Event) {
+  event.stopPropagation();
+  this.notificationService.dismissNotification(notification);
+  this.notifications = this.notifications.filter(
+    n => !(n.type === notification.type && n.id === notification.id)
+  );
+  this.unreadCount = this.notifications.length;
+}
+
+clearAllNotifications(event: Event) {
+  event.stopPropagation();
+  this.notificationService.clearAll(this.notifications);
+  this.notifications = [];
+  this.unreadCount = 0;
+}
   toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
   goToProfile() { this.router.navigate(['/profile']); }
   logout() {

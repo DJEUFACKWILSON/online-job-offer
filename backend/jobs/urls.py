@@ -13,6 +13,7 @@ urlpatterns = [
     path('auth/verify/<uuid:token>/', views.VerifyEmailView.as_view(), name='verify-email'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('admin-stats/', views.AdminStatsView.as_view(), name='admin-stats'),
+    path('notifications/', views.NotificationsView.as_view(), name='notifications'),
     path('', include(router.urls)),
     
 ]

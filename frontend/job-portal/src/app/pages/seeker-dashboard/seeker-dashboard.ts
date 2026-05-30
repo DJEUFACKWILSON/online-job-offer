@@ -8,6 +8,7 @@ import { ApplicationService } from '../../services/application';
 import { User } from '../../models/user';
 import { JobOffer } from '../../models/job-offer';
 import { Application } from '../../models/application';
+import { NotificationService, Notification } from '../../services/notification';
 
 @Component({
   selector: 'app-seeker-dashboard',
@@ -21,6 +22,9 @@ export class SeekerDashboard implements OnInit {
   jobs: JobOffer[] = [];
   filteredJobs: JobOffer[] = [];
   myApplications: Application[] = [];
+  notifications: Notification[] = [];
+showNotifications = false;
+unreadCount = 0;
   isLoadingJobs = true;
   isLoadingSidebar = true;
   searchKeyword = '';
@@ -54,16 +58,20 @@ export class SeekerDashboard implements OnInit {
   ];
 
   constructor(
+    
     private authService: AuthService,
     private jobService: JobService,
     private applicationService: ApplicationService,
+    private notificationService: NotificationService,
     private router: Router
+    
   ) {}
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
     this.loadJobs();
     this.loadMyApplications();
+    this.loadNotifications();
   }
 
   loadJobs() {
@@ -139,7 +147,36 @@ applyJob(jobId: number) { this.router.navigate(['/apply-job', jobId]); }
     };
     return classes[status] || 'badge-pending';
   }
+loadNotifications() {
+  this.notificationService.getNotifications().subscribe({
+    next: (data) => {
+      this.notifications = data;
+      this.unreadCount = data.length;
+    }
+  });
+}
 
+toggleNotifications() {
+  this.showNotifications = !this.showNotifications;
+  if (this.showNotifications) {
+    this.unreadCount = 0;
+  }
+}
+dismissNotification(notification: any, event: Event) {
+  event.stopPropagation();
+  this.notificationService.dismissNotification(notification);
+  this.notifications = this.notifications.filter(
+    n => !(n.type === notification.type && n.id === notification.id)
+  );
+  this.unreadCount = this.notifications.length;
+}
+
+clearAllNotifications(event: Event) {
+  event.stopPropagation();
+  this.notificationService.clearAll(this.notifications);
+  this.notifications = [];
+  this.unreadCount = 0;
+}
   get pendingCount() { return this.myApplications.filter(a => a.status === 'pending').length; }
   get acceptedCount() { return this.myApplications.filter(a => a.status === 'accepted').length; }
   get rejectedCount() { return this.myApplications.filter(a => a.status === 'rejected').length; }

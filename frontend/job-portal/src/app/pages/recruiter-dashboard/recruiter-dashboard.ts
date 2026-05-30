@@ -10,6 +10,7 @@ import { MessageService } from '../../services/message';
 import { User } from '../../models/user';
 import { JobOffer } from '../../models/job-offer';
 import { Application } from '../../models/application';
+import { NotificationService, Notification } from '../../services/notification';
 
 @Component({
   selector: 'app-recruiter-dashboard',
@@ -36,6 +37,9 @@ sendingMessageTo: number | null = null;
 successMessage = '';
 errorMessage = '';
   jobForm: FormGroup;
+  notifications: Notification[] = [];
+showNotifications = false;
+unreadCount = 0;
 
   categories = [
     { value: 'it', label: 'Information Technology' },
@@ -71,7 +75,9 @@ errorMessage = '';
     private jobService: JobService,
     private applicationService: ApplicationService,
     private messageService: MessageService,
+    private notificationService: NotificationService,
     private router: Router
+    
   ) {
     this.jobForm = this.fb.group({
       title: ['', Validators.required],
@@ -88,8 +94,10 @@ errorMessage = '';
   }
 
   ngOnInit() {
+    this.loadNotifications();
     this.currentUser = this.authService.getCurrentUser();
     this.loadMyJobs();
+  
   }
 
   loadMyJobs() {
@@ -222,7 +230,36 @@ next: () => {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
+  loadNotifications() {
+  this.notificationService.getNotifications().subscribe({
+    next: (data) => {
+      this.notifications = data;
+      this.unreadCount = data.length;
+    }
+  });
+}
 
+toggleNotifications() {
+  this.showNotifications = !this.showNotifications;
+  if (this.showNotifications) {
+    this.unreadCount = 0;
+  }
+}
+dismissNotification(notification: any, event: Event) {
+  event.stopPropagation();
+  this.notificationService.dismissNotification(notification);
+  this.notifications = this.notifications.filter(
+    n => !(n.type === notification.type && n.id === notification.id)
+  );
+  this.unreadCount = this.notifications.length;
+}
+
+clearAllNotifications(event: Event) {
+  event.stopPropagation();
+  this.notificationService.clearAll(this.notifications);
+  this.notifications = [];
+  this.unreadCount = 0;
+}
   get activeJobsCount() { return this.myJobs.filter(j => j.status === 'active').length; }
   get totalApplicationsCount() { return this.selectedJobApplications.length; }
 }

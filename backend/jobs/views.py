@@ -227,3 +227,58 @@ class AdminStatsView(APIView):
             'total_applications': Application.objects.count(),
             
         })
+    
+class NotificationsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        notifications = []
+
+        if user.role == 'recruiter':
+            applications = Application.objects.filter(
+                job_offer__recruiter=user
+            ).order_by('-applied_at')[:20]
+            for app in applications:
+                notifications.append({
+                    'id': app.id,
+                    'message': f'{app.full_name} applied for "{app.job_offer.title}"',
+                    'time': app.applied_at.strftime('%b %d, %Y %H:%M'),
+                    'type': 'application',
+                    'is_positive': True
+                })
+
+        elif user.role == 'seeker':
+            messages = RecruitmentMessage.objects.filter(
+                application__applicant=user
+            ).order_by('-sent_at')[:20]
+            for msg in messages:
+                notifications.append({
+                    'id': msg.id,
+                    'message': f'{"✅ Accepted" if msg.is_positive else "❌ Rejected"} for "{msg.application.job_offer.title}": {msg.content}',
+                    'time': msg.sent_at.strftime('%b %d, %Y %H:%M'),
+                    'type': 'message',
+                    'is_positive': msg.is_positive
+                })
+
+        elif user.role == 'admin':
+            recent_jobs = JobOffer.objects.order_by('-created_at')[:10]
+            for job in recent_jobs:
+                notifications.append({
+                    'id': job.id,
+                    'message': f'New job posted: "{job.title}" by {job.recruiter.username}',
+                    'time': job.created_at.strftime('%b %d, %Y %H:%M'),
+                    'type': 'job',
+                    'is_positive': True
+                })
+            recent_users = User.objects.order_by('-date_joined')[:5]
+            for u in recent_users:
+                notifications.append({
+                    'id': u.id,
+                    'message': f'New {u.role} registered: {u.username}',
+                    'time': u.date_joined.strftime('%b %d, %Y %H:%M'),
+                    'type': 'registration',
+                    'is_positive': True
+                })
+
+        return Response(notifications)
