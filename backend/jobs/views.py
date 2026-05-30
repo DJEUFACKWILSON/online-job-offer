@@ -176,7 +176,7 @@ class RecruitmentMessageViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         if request.user.role != 'recruiter':
             return Response({'error': 'Only recruiters can send messages.'}, status=status.HTTP_403_FORBIDDEN)
-
+        
         application_id = request.data.get('application')
         content = request.data.get('content')
         is_positive = request.data.get('is_positive')
