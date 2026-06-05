@@ -140,13 +140,18 @@ class JobOfferViewSet(viewsets.ModelViewSet):
 class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    queryset = Application.objects.all()
 
     def get_queryset(self):
         user = self.request.user
         if user.role == 'admin':
             return Application.objects.all()
         elif user.role == 'recruiter':
-            return Application.objects.filter(job_offer__recruiter=user)
+            queryset = Application.objects.filter(job_offer__recruiter=user)
+            job_offer_id = self.request.query_params.get('job_offer')
+            if job_offer_id:
+                queryset = queryset.filter(job_offer_id=job_offer_id)
+            return queryset
         else:
             return Application.objects.filter(applicant=user)
 
@@ -154,7 +159,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         if self.request.user.role != 'seeker':
             raise permissions.PermissionDenied('Only job seekers can apply.')
         serializer.save(applicant=self.request.user)
-
 class RecruitmentMessageViewSet(viewsets.ModelViewSet):
     serializer_class = RecruitmentMessageSerializer
     permission_classes = [permissions.IsAuthenticated]
