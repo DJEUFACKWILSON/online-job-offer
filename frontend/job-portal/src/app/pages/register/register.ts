@@ -3,23 +3,32 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth';
-
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment.development';
+import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule],
   templateUrl: './register.html',
   styleUrl: './register.scss'
 })
 export class Register {
   registerForm: FormGroup;
+  qrCode = '';
+totpSecret = '';
+showQrCode = false;
   isLoading = false;
   errorMessage = '';
   successMessage = '';
   showPassword = false;
   showPassword2 = false;
   selectedRole = 'seeker';
-
+  requiresVerification = false;
+  verificationCode = '';
+  registeredUsername = '';
+  isVerifying = false;
+  verificationError = '';
   roles = [
     { value: 'seeker', label: 'Job Seeker', icon: 'fa-user-tie', desc: 'Looking for a job' },
     { value: 'recruiter', label: 'Recruiter', icon: 'fa-building', desc: 'Hiring talent' },
@@ -29,7 +38,8 @@ export class Register {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    public router: Router,
+    private http: HttpClient
   ) {
     this.registerForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]],
@@ -49,7 +59,7 @@ export class Register {
     const password2 = form.get('password2')?.value;
     return password === password2 ? null : { passwordMismatch: true };
   }
-
+   
   get username() { return this.registerForm.get('username'); }
   get email() { return this.registerForm.get('email'); }
   get password() { return this.registerForm.get('password'); }
@@ -78,15 +88,21 @@ export class Register {
     this.successMessage = '';
 
     this.authService.register(this.registerForm.value).subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        if (this.selectedRole === 'admin') {
-          this.successMessage = 'Admin account created! Scan the QR code with your authenticator app.';
-        } else {
-          this.successMessage = response.message || 'Account created! Please check your email to verify your account.';
-        }
-        setTimeout(() => this.router.navigate(['/login']), 4000);
-      },
+     next: (response: any) => {
+  this.isLoading = false;
+  if (response.requires_verification) {
+    this.registeredUsername = response.username;
+    this.requiresVerification = true;
+  } else if (response.qr_code) {
+    // Admin - show QR code
+    this.qrCode = response.qr_code;
+    this.totpSecret = response.totp_secret;
+    this.showQrCode = true;
+  } else {
+    this.successMessage = 'Account created!';
+    setTimeout(() => this.router.navigate(['/login']), 2000);
+  }
+},
       error: (err) => {
         this.isLoading = false;
         const errors = err.error;
@@ -98,6 +114,25 @@ export class Register {
       }
     });
   }
-
+  verifyCode() {
+  if (!this.verificationCode.trim()) return;
+  this.isVerifying = true;
+  this.verificationError = '';
+  
+  this.http.post(`${environment.apiUrl}/auth/verify-code/`, {
+    username: this.registeredUsername,
+    code: this.verificationCode
+  }).subscribe({
+    next: () => {
+      this.isVerifying = false;
+      this.successMessage = 'Email verified! Redirecting to login...';
+      setTimeout(() => this.router.navigate(['/login']), 2000);
+    },
+    error: (err) => {
+      this.isVerifying = false;
+      this.verificationError = err.error?.error || 'Invalid code. Please try again.';
+    }
+  });
+}
   goToLanding() { this.router.navigate(['/']); }
 }

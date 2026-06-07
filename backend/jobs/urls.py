@@ -15,5 +15,6 @@ urlpatterns = [
     path('admin-stats/', views.AdminStatsView.as_view(), name='admin-stats'),
     path('notifications/', views.NotificationsView.as_view(), name='notifications'),
     path('', include(router.urls)),
+    path('auth/verify-code/', views.VerifyCodeView.as_view(), name='verify-code'),
     
 ]

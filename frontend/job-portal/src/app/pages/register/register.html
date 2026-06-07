@@ -47,20 +47,67 @@
         <p>Fill in the details below to get started</p>
       </div>
 
-      <!-- Success Message -->
-      <div class="alert alert-success d-flex align-items-center gap-2" *ngIf="successMessage">
-        <i class="fas fa-check-circle"></i>
-        <span>{{successMessage}}</span>
-      </div>
+    <!-- Verification Code Section -->
+      <div class="verification-section" *ngIf="requiresVerification">
+  <div class="verif-card">
+    <div class="verif-icon">
+      <i class="fas fa-envelope-open-text"></i>
+    </div>
+    <h5>Check Your Email</h5>
+    <p>We sent a 6-digit verification code to your email address. Enter it below to complete registration.</p>
+    
+  <div class="code-input-wrapper">
+    <input type="text" class="form-control code-input" 
+      [(ngModel)]="verificationCode"
+      placeholder="Enter code"
+      maxlength="6">
+  </div>
 
-      <!-- Error Message -->
-      <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="errorMessage">
-        <i class="fas fa-exclamation-circle"></i>
-        <span>{{errorMessage}}</span>
-      </div>
+  <div class="alert alert-danger mt-3" *ngIf="verificationError">
+    <i class="fas fa-exclamation-circle me-2"></i>{{verificationError}}
+  </div>
 
+  <button class="btn btn-primary verify-btn" 
+    (click)="verifyCode()" 
+    [disabled]="isVerifying || verificationCode.length < 6">
+    <span *ngIf="!isVerifying">
+      <i class="fas fa-check me-2"></i> Verify Code
+    </span>
+    <span *ngIf="isVerifying">
+      <span class="spinner-border spinner-border-sm me-2"></span>
+      Verifying...
+    </span>
+  </button>
+</div>
+</div>
+    <!-- Error Message -->
+    <div class="alert alert-danger d-flex align-items-center gap-2" *ngIf="errorMessage">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{errorMessage}}</span>
+    </div>
+        <!-- QR Code Section for Admin -->
+        <div class="verification-section" *ngIf="showQrCode">
+          <div class="verif-card">
+            <div class="verif-icon">
+              <i class="fas fa-qrcode"></i>
+            </div>
+            <h5>Set Up Two-Factor Authentication</h5>
+            <p>Scan this QR code with your Google Authenticator app to enable 2FA for your admin account.</p>
+            <div class="qr-wrapper">
+              <img [src]="qrCode" alt="QR Code" style="width:200px; height:200px;">
+            </div>
+            <div class="totp-secret mt-3">
+              <small class="text-muted">Manual entry code:</small>
+              <p class="secret-code">{{totpSecret}}</p>
+            </div>
+            <button class="btn btn-primary verify-btn mt-3" (click)="router.navigate(['/login'])">
+              <i class="fas fa-sign-in-alt me-2"></i> Proceed to Login
+            </button>
+          </div>
+        </div>
+      <div class="form-section" *ngIf="!requiresVerification && !showQrCode">
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-
+      
         <!-- Role Selection -->
         <div class="role-selector mb-4">
           <label class="form-label">I am a...</label>
@@ -221,7 +268,7 @@
         </button>
 
       </form>
-
+      </div>
       <div class="form-footer">
         <p>Already have an account?
           <a routerLink="/login" class="login-link">Sign In</a>

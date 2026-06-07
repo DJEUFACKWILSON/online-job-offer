@@ -28,8 +28,8 @@ export class Profile implements OnInit {
     private router: Router
   ) {
     this.profileForm = this.fb.group({
-    username: [''],
-  email: ['', [Validators.email]],
+      username: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
       phone: [''],
       location: [''],
       bio: [''],
@@ -100,10 +100,14 @@ onSubmit() {
       setTimeout(() => this.successMessage = '', 3000);
     },
     error: (err) => {
-      this.isSubmitting = false;
-      console.log('Error:', err);
-      this.errorMessage = 'Failed to update profile. Please try again.';
-    }
+     this.isSubmitting = false;
+    if (err.error && typeof err.error === 'object') {
+    const errors = Object.values(err.error).flat();
+    this.errorMessage = errors.join(' ');
+  } else {
+    this.errorMessage = 'Failed to update profile. Please try again.';
+  }
+}
   });
 }
 

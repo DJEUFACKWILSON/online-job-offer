@@ -49,11 +49,18 @@ export class Login {
         else if (role === 'recruiter') this.router.navigate(['/recruiter-dashboard']);
         else this.router.navigate(['/seeker-dashboard']);
       },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err.error?.error || 'Login failed. Please try again.';
-        if (err.error?.error?.includes('TOTP')) this.isAdmin = true;
-      }
+     error: (err) => {
+  this.isLoading = false;
+  const errorMsg = err.error?.error || '';
+  if (errorMsg.includes('TOTP code required')) {
+    this.isAdmin = true;
+  } else if (errorMsg.includes('Invalid TOTP')) {
+    this.isAdmin = true;
+    this.errorMessage = 'Invalid authenticator code. Please try again.';
+  } else {
+    this.errorMessage = errorMsg || 'Login failed. Please try again.';
+  }
+}
     });
   }
 

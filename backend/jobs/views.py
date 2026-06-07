@@ -15,7 +15,6 @@ from .serializers import (
     ApplicationSerializer, RecruitmentMessageSerializer, TOTPVerifySerializer
 )
 
-
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -26,21 +25,26 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Send verification email for seekers and recruiters
         if user.role in ['seeker', 'recruiter']:
-            verification_link = f"http://localhost:8000/api/auth/verify/{user.verification_token}/"
+            # Generate 6-digit code
+            import random
+            code = str(random.randint(100000, 999999))
+            user.verification_code = code
+            user.save()
+
             send_mail(
-                subject='Welcome to Online Job Offer Platform — Verify your email',
-                message=f'Hi {user.username},\n\nPlease verify your email by clicking the link below:\n\n{verification_link}\n\nThank you!',
+                subject='Your JobPortal Verification Code',
+                message=f'Hi {user.username},\n\nYour verification code is:\n\n{code}\n\nThis code expires in 10 minutes.\n\nThank you!',
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=[user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
-            return Response(
-                {'message': 'Account created successfully. Please check your email to verify your account.'},
-                status=status.HTTP_201_CREATED
-            )
-        # For admin, return QR code for TOTP setup
+            return Response({
+                'message': 'Verification code sent to your email.',
+                'username': user.username,
+                'requires_verification': True
+            }, status=status.HTTP_201_CREATED)
+
         if user.role == 'admin':
             totp_uri = user.get_totp_uri()
             qr = qrcode.make(totp_uri)
@@ -52,8 +56,25 @@ class RegisterView(generics.CreateAPIView):
                 'qr_code': f'data:image/png;base64,{qr_base64}',
                 'totp_secret': user.totp_secret,
             }, status=status.HTTP_201_CREATED)
+class VerifyCodeView(APIView):
+    permission_classes = [permissions.AllowAny]
 
+    def post(self, request):
+        username = request.data.get('username')
+        code = request.data.get('code')
 
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if user.verification_code == code:
+            user.is_verified = True
+            user.verification_code = None
+            user.save()
+            return Response({'message': 'Email verified successfully! You can now login.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid verification code.'}, status=status.HTTP_400_BAD_REQUEST)
 class VerifyEmailView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -85,22 +106,21 @@ class LoginView(APIView):
         if not user.is_active:
             return Response({'error': 'Your account has been disabled.'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Seekers and recruiters must verify email first
         if user.role in ['seeker', 'recruiter'] and not user.is_verified:
             return Response({'error': 'Please verify your email before logging in.'}, status=status.HTTP_403_FORBIDDEN)
-# Admin must provide TOTP code (disabled for testing)
-# if user.role == 'admin':
-#     if not totp_code:
-#         return Response({'error': 'TOTP code required for admin login.'}, status=status.HTTP_400_BAD_REQUEST)
-#     if not user.verify_totp_code(totp_code):
-#         return Response({'error': 'Invalid TOTP code.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if user.role == 'admin':
+            if not totp_code:
+                return Response({'error': 'TOTP code required for admin login.'}, status=status.HTTP_400_BAD_REQUEST)
+            if not user.verify_totp_code(totp_code):
+                return Response({'error': 'Invalid TOTP code.'}, status=status.HTTP_401_UNAUTHORIZED)
+
         refresh = RefreshToken.for_user(user)
         return Response({
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data
         })
-
 
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer

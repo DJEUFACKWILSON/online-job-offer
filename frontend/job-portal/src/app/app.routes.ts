@@ -48,8 +48,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/profile/profile').then(m => m.Profile),
     canActivate: [authGuard]
   },
+    {
+  path: 'verify-email/:token',
+  loadComponent: () => import('./pages/verify-email/verify-email').then(m => m.VerifyEmail)
+},
   {
     path: '**',
     loadComponent: () => import('./pages/not-found/not-found').then(m => m.NotFound)
-  }
+  },
+
 ];

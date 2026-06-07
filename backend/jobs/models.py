@@ -38,7 +38,7 @@ class User(AbstractUser):
     # TOTP 2FA (for admins only)
     totp_secret = models.CharField(max_length=32, blank=True, null=True)
     totp_verified = models.BooleanField(default=False)  # True after first QR scan confirmed
-
+    verification_code = models.CharField(max_length=6, blank=True, null=True)
     def generate_totp_secret(self):
         """Generate a new TOTP secret for this admin."""
         self.totp_secret = pyotp.random_base32()

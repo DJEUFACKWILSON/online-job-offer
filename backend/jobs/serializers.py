@@ -7,7 +7,7 @@ import pyotp
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
-    admin_key = serializers.CharField(write_only=True, required=False)
+    admin_key = serializers.CharField(write_only=True, required=False,allow_blank=True)
 
     class Meta:
         model = User
@@ -40,7 +40,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             user.is_verified = True
             user.totp_secret = pyotp.random_base32()
         else:
-            user.is_verified = True
+            user.is_verified = False
 
         user.save()
         return user
