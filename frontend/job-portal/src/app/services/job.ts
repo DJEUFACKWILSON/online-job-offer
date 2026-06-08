@@ -38,10 +38,12 @@ export class JobService {
     return this.http.delete(`${this.apiUrl}/jobs/${id}/`);
   }
 
-  cancelJob(id: number): Observable<JobOffer> {
-    return this.http.patch<JobOffer>(`${this.apiUrl}/jobs/${id}/`, { status: 'cancelled' });
+  cancelJob(id: number): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/jobs/${id}/cancel/`, {});
+}
+  enableJob(id: number): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/jobs/${id}/enable/`, {});
   }
-
   getActiveJobs(): Observable<JobOffer[]> {
     return this.http.get<JobOffer[]>(`${this.apiUrl}/jobs/all-active/`);
   }

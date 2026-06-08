@@ -1,4 +1,3 @@
-
 <div class="dashboard-layout" [class.sidebar-open]="sidebarOpen">
 
   <!-- SIDEBAR -->
@@ -12,8 +11,6 @@
         <i class="fas fa-times"></i>
       </button>
     </div>
-
-    <!-- Profile Card -->
     <div class="profile-card">
       <div class="profile-avatar" (click)="goToProfile()">
         <img *ngIf="currentUser?.profile_picture" [src]="currentUser?.profile_picture" alt="Profile">
@@ -24,8 +21,6 @@
       <h6 class="profile-name">{{currentUser?.username}}</h6>
       <span class="profile-role">Administrator</span>
     </div>
-
-    <!-- Navigation -->
     <nav class="sidebar-nav">
       <a class="nav-item" [class.active]="activeTab === 'overview'" (click)="activeTab = 'overview'">
         <i class="fas fa-chart-pie"></i> Overview
@@ -38,23 +33,21 @@
         <i class="fas fa-file-alt"></i> Applications
         <span class="nav-badge">{{stats.total_applications}}</span>
       </a>
+      <a class="nav-item" [class.active]="activeTab === 'users'" (click)="activeTab = 'users'; loadUsers()">
+        <i class="fas fa-users"></i> Manage Users
+      </a>
       <a class="nav-item" (click)="goToProfile()">
         <i class="fas fa-user-shield"></i> My Profile
       </a>
     </nav>
-
     <button class="logout-btn" (click)="logout()">
       <i class="fas fa-sign-out-alt me-2"></i> Logout
     </button>
   </aside>
 
-  <!-- OVERLAY -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
 
-  <!-- MAIN CONTENT -->
   <main class="main-content">
-
-    <!-- TOP NAVBAR -->
     <header class="top-navbar">
       <div class="navbar-left">
         <button class="menu-toggle d-lg-none" (click)="toggleSidebar()">
@@ -64,46 +57,44 @@
           <h5 *ngIf="activeTab === 'overview'">Admin Overview</h5>
           <h5 *ngIf="activeTab === 'jobs'">All Job Offers</h5>
           <h5 *ngIf="activeTab === 'applications'">All Applications</h5>
+          <h5 *ngIf="activeTab === 'users'">Manage Users</h5>
         </div>
       </div>
       <div class="navbar-right">
-      <div class="notification-bell" (click)="toggleNotifications()" style="position:relative; cursor:pointer;">
-  <i class="fas fa-bell"></i>
-  <span class="bell-badge" *ngIf="unreadCount > 0">{{unreadCount}}</span>
-
-<div class="notifications-dropdown" *ngIf="showNotifications">
-  <div class="notif-header">
-    <h6>Notifications</h6>
-    <button class="btn-clear-all" *ngIf="notifications.length > 0"
-      (click)="clearAllNotifications($event)">
-      Clear All
-    </button>
-  </div>
-  <div class="notif-empty" *ngIf="notifications.length === 0">
-    <i class="fas fa-bell-slash"></i>
-    <p>No notifications</p>
-  </div>
-  <div class="notif-item" *ngFor="let n of notifications"
-    [class.positive]="n.is_positive" [class.negative]="!n.is_positive">
-    <div class="notif-icon">
-      <i class="fas"
-        [class.fa-check-circle]="n.is_positive && n.type === 'message'"
-        [class.fa-times-circle]="!n.is_positive && n.type === 'message'"
-        [class.fa-user-check]="n.type === 'application'"
-        [class.fa-briefcase]="n.type === 'job'"
-        [class.fa-user-plus]="n.type === 'registration'"></i>
-    </div>
-    <div class="notif-content">
-      <p>{{n.message}}</p>
-      <span class="notif-time">{{n.time}}</span>
-    </div>
-    <button class="btn-dismiss" (click)="dismissNotification(n, $event)">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-</div>
+        <div class="notification-bell" (click)="toggleNotifications()" style="position:relative; cursor:pointer;">
+          <i class="fas fa-bell"></i>
+          <span class="bell-badge" *ngIf="unreadCount > 0">{{unreadCount}}</span>
+          <div class="notifications-dropdown" *ngIf="showNotifications">
+            <div class="notif-header">
+              <h6>Notifications</h6>
+              <button class="btn-clear-all" *ngIf="notifications.length > 0"
+                (click)="clearAllNotifications($event)">Clear All</button>
+            </div>
+            <div class="notif-empty" *ngIf="notifications.length === 0">
+              <i class="fas fa-bell-slash"></i>
+              <p>No notifications</p>
+            </div>
+            <div class="notif-item" *ngFor="let n of notifications"
+              [class.positive]="n.is_positive" [class.negative]="!n.is_positive">
+              <div class="notif-icon">
+                <i class="fas"
+                  [class.fa-check-circle]="n.is_positive && n.type === 'message'"
+                  [class.fa-times-circle]="!n.is_positive && n.type === 'message'"
+                  [class.fa-user-check]="n.type === 'application'"
+                  [class.fa-briefcase]="n.type === 'job'"
+                  [class.fa-user-plus]="n.type === 'registration'"></i>
+              </div>
+              <div class="notif-content">
+                <p>{{n.message}}</p>
+                <span class="notif-time">{{n.time}}</span>
+              </div>
+              <button class="btn-dismiss" (click)="dismissNotification(n, $event)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="user-avatar"(click)="goToProfile()">
+        <div class="user-avatar" (click)="goToProfile()">
           <div class="avatar-sm">
             {{currentUser?.username?.charAt(0)?.toUpperCase()}}
           </div>
@@ -119,89 +110,47 @@
           <p>Here is an overview of the platform activity</p>
         </div>
       </div>
-
-      <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon blue">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.total_users}}</h3>
-            <p>Total Users</p>
-          </div>
+          <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+          <div class="stat-info"><h3>{{stats.total_users}}</h3><p>Total Users</p></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon green">
-            <i class="fas fa-user-tie"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.total_seekers}}</h3>
-            <p>Job Seekers</p>
-          </div>
+          <div class="stat-icon green"><i class="fas fa-user-tie"></i></div>
+          <div class="stat-info"><h3>{{stats.total_seekers}}</h3><p>Job Seekers</p></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon orange">
-            <i class="fas fa-building"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.total_recruiters}}</h3>
-            <p>Recruiters</p>
-          </div>
+          <div class="stat-icon orange"><i class="fas fa-building"></i></div>
+          <div class="stat-info"><h3>{{stats.total_recruiters}}</h3><p>Recruiters</p></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon purple">
-            <i class="fas fa-briefcase"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.total_jobs}}</h3>
-            <p>Total Jobs</p>
-          </div>
+          <div class="stat-icon purple"><i class="fas fa-briefcase"></i></div>
+          <div class="stat-info"><h3>{{stats.total_jobs}}</h3><p>Total Jobs</p></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon teal">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.active_jobs}}</h3>
-            <p>Active Jobs</p>
-          </div>
+          <div class="stat-icon teal"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-info"><h3>{{stats.active_jobs}}</h3><p>Active Jobs</p></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon red">
-            <i class="fas fa-times-circle"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.cancelled_jobs}}</h3>
-            <p>Cancelled Jobs</p>
-          </div>
+          <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+          <div class="stat-info"><h3>{{stats.cancelled_jobs}}</h3><p>Cancelled Jobs</p></div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon indigo">
-            <i class="fas fa-file-alt"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{stats.total_applications}}</h3>
-            <p>Applications</p>
-          </div>
+          <div class="stat-icon indigo"><i class="fas fa-file-alt"></i></div>
+          <div class="stat-info"><h3>{{stats.total_applications}}</h3><p>Applications</p></div>
         </div>
       </div>
-
-      <!-- Quick Actions -->
       <div class="quick-actions">
         <h5 class="section-title">Quick Actions</h5>
         <div class="actions-grid">
           <div class="action-card" (click)="activeTab = 'jobs'">
-            <i class="fas fa-briefcase"></i>
-            <span>Manage Jobs</span>
+            <i class="fas fa-briefcase"></i><span>Manage Jobs</span>
           </div>
           <div class="action-card" (click)="activeTab = 'applications'">
-            <i class="fas fa-file-alt"></i>
-            <span>View Applications</span>
+            <i class="fas fa-file-alt"></i><span>View Applications</span>
           </div>
           <div class="action-card" (click)="goToProfile()">
-            <i class="fas fa-user-shield"></i>
-            <span>My Profile</span>
+            <i class="fas fa-user-shield"></i><span>My Profile</span>
           </div>
         </div>
       </div>
@@ -215,8 +164,6 @@
           <p>{{stats.total_jobs}} total jobs on the platform</p>
         </div>
       </div>
-
-      <!-- Search -->
       <div class="search-bar mb-4">
         <div class="search-wrapper">
           <i class="fas fa-search search-icon"></i>
@@ -225,23 +172,16 @@
             [(ngModel)]="searchJob">
         </div>
       </div>
-
       <div class="loading-state" *ngIf="isLoadingJobs">
         <div class="spinner-border text-primary"></div>
         <p>Loading jobs...</p>
       </div>
-
       <div class="jobs-table-wrapper" *ngIf="!isLoadingJobs">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Job Title</th>
-              <th>Recruiter</th>
-              <th>Category</th>
-              <th>Location</th>
-              <th>Status</th>
-              <th>Posted</th>
-              <th>Actions</th>
+              <th>Job Title</th><th>Recruiter</th><th>Category</th>
+              <th>Location</th><th>Status</th><th>Posted</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -262,12 +202,14 @@
               <td>
                 <div class="table-actions">
                   <button class="btn btn-sm btn-outline-warning"
-                    (click)="cancelJob(job.id)"
-                    *ngIf="job.status === 'active'">
+                    (click)="cancelJob(job.id)" *ngIf="job.status === 'active'">
                     <i class="fas fa-ban"></i>
                   </button>
-                  <button class="btn btn-sm btn-outline-danger"
-                    (click)="deleteJob(job.id)">
+                  <button class="btn btn-sm btn-outline-success"
+                    (click)="enableJob(job.id)" *ngIf="job.status === 'cancelled'">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteJob(job.id)">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
@@ -289,23 +231,16 @@
           <p>{{stats.total_applications}} total applications on the platform</p>
         </div>
       </div>
-
       <div class="loading-state" *ngIf="isLoadingApplications">
         <div class="spinner-border text-primary"></div>
         <p>Loading applications...</p>
       </div>
-
       <div class="jobs-table-wrapper" *ngIf="!isLoadingApplications">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Applicant</th>
-              <th>Job Title</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Status</th>
-              <th>Applied</th>
-              <th>CV</th>
+              <th>Applicant</th><th>Job Title</th><th>Email</th>
+              <th>Phone</th><th>Status</th><th>Applied</th><th>CV</th>
             </tr>
           </thead>
           <tbody>
@@ -334,5 +269,132 @@
       </div>
     </div>
 
+    <!-- USERS TAB -->
+    <div class="content-area" *ngIf="activeTab === 'users'">
+      <div class="welcome-banner">
+        <div>
+          <h4>Manage Users</h4>
+          <p>{{allUsers.length}} registered users on the platform</p>
+        </div>
+      </div>
+      <div class="search-bar mb-4">
+        <div class="search-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" class="form-control search-input"
+            placeholder="Search users by username or email..."
+            [(ngModel)]="searchUser">
+        </div>
+      </div>
+      <div class="loading-state" *ngIf="isLoadingUsers">
+        <div class="spinner-border text-primary"></div>
+        <p>Loading users...</p>
+      </div>
+      <div class="jobs-table-wrapper" *ngIf="!isLoadingUsers">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Username</th><th>Email</th><th>Role</th>
+              <th>Verified</th><th>Status</th><th>Joined</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers">
+              <td class="fw-600">{{user.username}}</td>
+              <td>{{user.email}}</td>
+              <td>
+                <span class="role-badge"
+                  [class.recruiter]="user.role === 'recruiter'"
+                  [class.seeker]="user.role === 'seeker'"
+                  [class.admin]="user.role === 'admin'">
+                  {{user.role | titlecase}}
+                </span>
+              </td>
+              <td>
+                <span class="text-success" *ngIf="user.is_verified"><i class="fas fa-check-circle"></i></span>
+                <span class="text-danger" *ngIf="!user.is_verified"><i class="fas fa-times-circle"></i></span>
+              </td>
+              <td>
+                <span class="status-pill" [class.active]="user.is_active" [class.cancelled]="!user.is_active">
+                  {{user.is_active ? 'Active' : 'Disabled'}}
+                </span>
+              </td>
+              <td>{{user.date_joined}}</td>
+              <td>
+                <div class="table-actions">
+                  <button class="btn btn-sm btn-outline-warning"
+                    (click)="toggleUser(user)"
+                    [title]="user.is_active ? 'Disable user' : 'Enable user'">
+                    <i class="fas" [class.fa-ban]="user.is_active" [class.fa-check]="!user.is_active"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger"
+                    (click)="deleteUser(user)" title="Delete user permanently">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredUsers.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">No users found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
+
+  <!-- Delete Job Modal -->
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5><i class="fas fa-trash me-2 text-danger"></i>Delete Job Post</h5>
+        <button class="btn-close-modal" (click)="showDeleteModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>You are about to permanently delete <strong>{{jobToDelete?.title}}</strong>.</p>
+        <p class="text-muted">A notification email will be sent to the recruiter with your reason.</p>
+        <div class="form-group mt-3">
+          <label class="form-label">Reason for deletion *</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="deleteReason"
+            placeholder="e.g. This job post violates our terms and conditions..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="showDeleteModal = false">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDelete()" [disabled]="!deleteReason.trim()">
+          <i class="fas fa-trash me-2"></i> Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete User Modal -->
+  <div class="modal-overlay" *ngIf="showDeleteUserModal" (click)="showDeleteUserModal = false">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5><i class="fas fa-user-times me-2 text-danger"></i>Delete User</h5>
+        <button class="btn-close-modal" (click)="showDeleteUserModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>You are about to permanently delete <strong>{{userToDelete?.username}}</strong>.</p>
+        <p class="text-muted">A notification email will be sent to the user with your reason.</p>
+        <div class="form-group mt-3">
+          <label class="form-label">Reason for deletion *</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="deleteUserReason"
+            placeholder="e.g. This account violated our terms and conditions..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="showDeleteUserModal = false">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDeleteUser()" [disabled]="!deleteUserReason.trim()">
+          <i class="fas fa-user-times me-2"></i> Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>

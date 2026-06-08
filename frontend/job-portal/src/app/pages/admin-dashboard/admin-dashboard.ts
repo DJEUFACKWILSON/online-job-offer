@@ -20,21 +20,27 @@ import { NotificationService, Notification } from '../../services/notification';
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.scss'
 })
-export class AdminDashboard implements OnInit {
+   export class AdminDashboard implements OnInit {
   currentUser: User | null = null;
-  allUsers: User[] = [];
+  allUsers: any[] = [];
   allJobs: JobOffer[] = [];
   allApplications: Application[] = [];
-  isLoadingUsers = true;
+  isLoadingUsers = false;
   isLoadingJobs = true;
   isLoadingApplications = true;
   activeTab = 'overview';
   sidebarOpen = false;
   searchUser = '';
   searchJob = '';
+  showDeleteModal = false;
+  jobToDelete: JobOffer | null = null;
+  deleteReason = '';
+  showDeleteUserModal = false;
+  userToDelete: any = null;
+  deleteUserReason = '';
   notifications: Notification[] = [];
-showNotifications = false;
-unreadCount = 0;
+  showNotifications = false;
+  unreadCount = 0;
 
   stats = {
     total_users: 0,
@@ -45,7 +51,6 @@ unreadCount = 0;
     cancelled_jobs: 0,
     total_applications: 0,
   };
-
   constructor(
     private authService: AuthService,
     private jobService: JobService,
@@ -61,6 +66,7 @@ unreadCount = 0;
     this.loadJobs();
     this.loadNotifications();
     this.loadApplications();
+    this.loadUsers();
   }
 
   loadStats() {
@@ -91,23 +97,71 @@ unreadCount = 0;
       error: () => { this.isLoadingApplications = false; }
     });
   }
-
+  loadUsers() {
+  this.isLoadingUsers = true;
+  this.http.get<any[]>(`${environment.apiUrl}/users/`).subscribe({
+    next: (users) => {
+      this.allUsers = users;
+      this.isLoadingUsers = false;
+    },
+    error: () => { this.isLoadingUsers = false; }
+  });
+}
   cancelJob(jobId: number) {
-    if (confirm('Are you sure you want to cancel this job?')) {
-      this.jobService.cancelJob(jobId).subscribe({
-        next: () => this.loadJobs()
-      });
-    }
+  if (confirm('Are you sure you want to cancel this job?')) {
+    this.jobService.cancelJob(jobId).subscribe({
+      next: () => this.loadJobs(),
+      error: (err) => {
+        if (err.status === 403) {
+          alert('Session expired. Please login again.');
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        } else {
+          alert('Failed to cancel job. Please try again.');
+        }
+      }
+    });
   }
+}
 
-  deleteJob(jobId: number) {
-    if (confirm('Are you sure you want to DELETE this job?')) {
-      this.jobService.deleteJob(jobId).subscribe({
-        next: () => this.loadJobs()
-      });
+enableJob(jobId: number) {
+  this.jobService.enableJob(jobId).subscribe({
+    next: () => this.loadJobs(),
+    error: (err) => {
+      if (err.status === 403) {
+        alert('Session expired. Please login again.');
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      } else {
+        alert('Failed to enable job. Please try again.');
+      }
     }
-  }
+  });
+}
 
+    deleteJob(jobId: number) {
+  const job = this.allJobs.find(j => j.id === jobId);
+  if (job) {
+    this.jobToDelete = job;
+    this.deleteReason = '';
+    this.showDeleteModal = true;
+  }
+}
+   confirmDelete() {
+  if (!this.jobToDelete || !this.deleteReason.trim()) return;
+  this.http.delete(`${environment.apiUrl}/jobs/${this.jobToDelete.id}/`, {
+    body: { reason: this.deleteReason }
+  }).subscribe({
+    next: () => {
+      this.showDeleteModal = false;
+      this.jobToDelete = null;
+      this.deleteReason = '';
+      this.loadJobs();
+      this.loadStats();
+    },
+    error: () => alert('Failed to delete job.')
+  });
+} 
   toggleUserStatus(user: User) {
     const action = user.is_active ? 'disable' : 'enable';
     if (confirm(`Are you sure you want to ${action} this user?`)) {
@@ -161,6 +215,45 @@ clearAllNotifications(event: Event) {
   this.notificationService.clearAll(this.notifications);
   this.notifications = [];
   this.unreadCount = 0;
+}
+get filteredUsers() {
+  if (!this.searchUser) return this.allUsers;
+  return this.allUsers.filter(u =>
+    u.username.toLowerCase().includes(this.searchUser.toLowerCase()) ||
+    u.email.toLowerCase().includes(this.searchUser.toLowerCase())
+  );
+}
+
+toggleUser(user: any) {
+  const action = user.is_active ? 'disable' : 'enable';
+  if (confirm(`Are you sure you want to ${action} ${user.username}?`)) {
+    this.http.patch(`${environment.apiUrl}/users/${user.id}/toggle/`, {}).subscribe({
+      next: () => this.loadUsers(),
+      error: () => alert('Failed to update user status.')
+    });
+  }
+}
+deleteUser(user: any) {
+  console.log('deleteUser called', user);
+  this.userToDelete = user;
+  this.deleteUserReason = '';
+  this.showDeleteUserModal = true;
+  console.log('showDeleteUserModal', this.showDeleteUserModal);
+}
+confirmDeleteUser() {
+  if (!this.userToDelete || !this.deleteUserReason.trim()) return;
+  this.http.delete(`${environment.apiUrl}/users/${this.userToDelete.id}/`, {
+    body: { reason: this.deleteUserReason }
+  }).subscribe({
+    next: () => {
+      this.showDeleteUserModal = false;
+      this.userToDelete = null;
+      this.deleteUserReason = '';
+      this.loadUsers();
+      this.loadStats();
+    },
+    error: () => alert('Failed to delete user.')
+  });
 }
   toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
   goToProfile() { this.router.navigate(['/profile']); }

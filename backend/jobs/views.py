@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework.exceptions import PermissionDenied
+from django.core.mail import send_mail
 import qrcode
 import io
 import base64
@@ -134,7 +136,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class JobOfferViewSet(viewsets.ModelViewSet):
     serializer_class = JobOfferSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+     
     def get_queryset(self):
         user = self.request.user
         if user.role == 'admin':
@@ -142,7 +144,6 @@ class JobOfferViewSet(viewsets.ModelViewSet):
         elif user.role == 'recruiter':
             return JobOffer.objects.filter(recruiter=user)
         else:
-            # Seekers see all active jobs
             return JobOffer.objects.filter(status='active')
 
     def perform_create(self, serializer):
@@ -156,7 +157,38 @@ class JobOfferViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(jobs, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['patch'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        print(f"CANCEL: user={request.user.username}, role={request.user.role}")
+        job = self.get_object()
+        if request.user.role != 'admin' and job.recruiter != request.user:
+            raise permissions.PermissionDenied('Not allowed.')
+        job.status = 'cancelled'
+        job.save()
+        
+        return Response({'message': 'Job cancelled successfully.'})
 
+    @action(detail=True, methods=['patch'], url_path='enable')
+    def enable(self, request, pk=None):
+        job = self.get_object()
+        if request.user.role != 'admin':
+            raise PermissionDenied('Not allowed.')
+        job.status = 'active'
+        job.save()
+        return Response({'message': 'Job enabled successfully.'})
+    def perform_destroy(self, instance):
+        reason = self.request.data.get('reason', 'Your job post has been removed by the administrator.')
+        recruiter_email = instance.recruiter.email
+        recruiter_name = instance.recruiter.username
+        job_title = instance.title
+        send_mail(
+            subject='Your Job Post Has Been Removed — JobPortal',
+            message=f'Hi {recruiter_name},\n\nYour job post "{job_title}" has been removed by the platform administrator.\n\nReason: {reason}\n\nIf you have questions, please contact support.\n\nJobPortal Team',
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[recruiter_email],
+            fail_silently=True,
+        )
+        instance.delete()
 class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -242,7 +274,58 @@ class AdminStatsView(APIView):
             'total_applications': Application.objects.count(),
             
         })
-    
+
+class UsersView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'admin':
+            return Response({'error': 'Admin only.'}, status=status.HTTP_403_FORBIDDEN)
+        users = User.objects.exclude(id=request.user.id).order_by('-date_joined')
+        data = []
+        for user in users:
+            data.append({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role,
+                'is_active': user.is_active,
+                'is_verified': user.is_verified,
+                'date_joined': user.date_joined.strftime('%b %d, %Y'),
+            })
+        return Response(data)    
+class UserDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        if request.user.role != 'admin':
+            return Response({'error': 'Admin only.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        reason = request.data.get('reason', 'Your account has been removed by the administrator.')
+        send_mail(
+            subject='Your Account Has Been Removed — JobPortal',
+            message=f'Hi {user.username},\n\nYour account has been permanently deleted by the platform administrator.\n\nReason: {reason}\n\nJobPortal Team',
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+        user.delete()
+        return Response({'message': 'User deleted successfully.'})
+
+    def patch(self, request, pk):
+        if request.user.role != 'admin':
+            return Response({'error': 'Admin only.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        user.is_active = not user.is_active
+        user.save()
+        return Response({'message': f'User {"enabled" if user.is_active else "disabled"} successfully.'})
 class NotificationsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
