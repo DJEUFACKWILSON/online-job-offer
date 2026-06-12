@@ -107,3 +107,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:4200',
+    'https://online-job-offer.vercel.app',
+    'https://online-job-offer-frontend.vercel.app',
+]
