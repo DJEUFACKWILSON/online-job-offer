@@ -306,13 +306,16 @@ class UserDetailView(APIView):
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         
         reason = request.data.get('reason', 'Your account has been removed by the administrator.')
-        send_mail(
-            subject='Your Account Has Been Removed — JobPortal',
-            message=f'Hi {user.username},\n\nYour account has been permanently deleted by the platform administrator.\n\nReason: {reason}\n\nJobPortal Team',
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
+        try:
+            send_mail(
+                subject='Your Account Has Been Removed — JobPortal',
+                message=f'Hi {user.username},\n\nYour account has been permanently deleted by the platform administrator.\n\nReason: {reason}\n\nJobPortal Team',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
         user.delete()
         return Response({'message': 'User deleted successfully.'})
 
