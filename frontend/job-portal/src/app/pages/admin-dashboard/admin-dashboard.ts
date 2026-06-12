@@ -9,7 +9,7 @@ import { User } from '../../models/user';
 import { JobOffer } from '../../models/job-offer';
 import { Application } from '../../models/application';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { NotificationService, Notification } from '../../services/notification';
 
 
